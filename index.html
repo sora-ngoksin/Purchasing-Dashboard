@@ -76,7 +76,7 @@ async function readPOPDF(){
   window.lastPOText=text;
   let po=firstMatch(text,[/(?:PURCHASE\s*ORDER[\s\S]{0,150}?(?:\/No\.|No\.|เลขที่)\s*[:.]?\s*)([A-Z0-9-]{6,})/i,/\b(PO[A-Z0-9-]{6,})\b/i]);
   if(!po){const m=f.name.match(/\b(PO[A-Z0-9-]{6,})\b/i);po=m?m[1]:''}
-  let supplier=firstMatch(text,[/(?:ชื่อบริษัท|Supplier|ผู้ขาย)\s*[:：]?\s*([^\n]{3,80})/i]);
+  let supplier=firstMatch(text,[/ชื่อบริษัท\s*[:：]\s*([^\n]{3,80})/i,/(?:Supplier|ผู้ขาย)\s*[:：]?\s*([^\n]{3,80})/i]); supplier=supplier.replace(/\s{2,}.*/,'').trim();
   if(!supplier){const a=f.name.replace(/\.pdf$/i,'').split(/\s+-\s+/);if(a.length>1)supplier=a.slice(1).join(' - ').trim()}
   let pr=firstMatch(text,[/(?:REF\.?\s*P\/?R\s*NO\.?|PR\s*NO\.?|เลขที่เอกสารขอซื้อ)\s*[:：]?\s*([A-Z0-9-]{4,})/i]);
   let rfq=firstMatch(text,[/(?:RFQ\s*NO\.?|เอกสารสอบถามราคา)\s*[:：]?\s*([A-Z0-9-]{4,})/i]);
@@ -85,10 +85,10 @@ async function readPOPDF(){
   let delivery=firstMatch(text,[/(?:DELIVERY\s*DATE|วันที่กำหนดส่งสินค้า|กาหนดส่งสินค้า)\s*[:：]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})/i]);
   let term=firstMatch(text,[/(?:TERM\s*OF\s*PAYMENT|การชำระเงิน|การชาระเงิน)\s*[:：]?\s*([^\n]{2,30})/i]);
   let grand=firstMatch(text,[/(?:Grand\s*Total|ยอดเงินสุทธิ)\s*[:：]?\s*([\d,]+(?:\.\d{1,2})?)/i]);
-  let net=firstMatch(text,[/(?:Net\s*Total|ราคาสุทธิ)\s*[:：]?\s*([\d,]+(?:\.\d{1,2})?)/i]);
+  let net=firstMatch(text,[/(?:Subtotal|รวมเงิน)\s*[:：]?\s*([\d,]+(?:\.\d{1,2})?)/i,/(?:Net\s*Total|ราคาสุทธิ)\s*[:：]?\s*([\d,]+(?:\.\d{1,2})?)/i]);
   let purchaser=firstMatch(text,[/(?:PURCHASE\s*NAME|พนักงานจัดซื้อ)\s*[:：]?\s*([^\n]{2,40})/i]);
   setPOField('poNo',po);setPOField('poVendor',supplier);setPOField('poPr',pr);setPOField('poRfq',rfq);setPOField('poSupplierCode',sc);setPOField('poDate',isoDate(issued));setPOField('poDeliveryDate',isoDate(delivery));setPOField('poPurchaser',purchaser);setPOField('poPaymentTerm',term);setPOField('poNet',net.replace(/,/g,''));setPOField('poAmount',grand.replace(/,/g,''));
-  if(typeof calcPOTotal==='function'&&net)calcPOTotal(); const found=[po,supplier,pr,rfq,grand||net].filter(Boolean).length;
+  if(typeof calcPOTotal==='function'&&net&&!grand)calcPOTotal(); const found=[po,supplier,pr,rfq,grand||net].filter(Boolean).length;
   status.textContent=`${usedOCR?'OCR':'PDF text'} complete: ${pdf.numPages} page(s), detected ${found} key fields. Please review before Save.`;
   console.log('PO extracted text:',text);
  }catch(e){console.error(e);status.textContent='Read/OCR failed';alert('อ่าน/OCR PDF ไม่สำเร็จ: '+e.message)}
